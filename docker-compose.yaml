@@ -1,0 +1,127 @@
+services:
+  api-gateway:
+    image: ${API_GATEWAY_IMAGE}
+    depends_on:
+      user-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    ports:
+      - "8084:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+
+  user-service:
+    image: ${USER_SERVICE_IMAGE}
+    depends_on:
+      user-postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_DRIVER_CLASS_NAME: org.postgresql.Driver
+      DB_URL: jdbc:postgresql://user-postgres:5432/${USER_POSTGRES_DB}
+      DB_USER: ${USER_POSTGRES_USER}
+      DB_PASSWORD: ${USER_POSTGRES_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  auth-service:
+    image: ${AUTH_SERVICE_IMAGE}
+    depends_on:
+      auth-postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_DRIVER_CLASS_NAME: org.postgresql.Driver
+      DB_URL: jdbc:postgresql://auth-postgres:5432/${AUTH_POSTGRES_DB}
+      DB_USER: ${AUTH_POSTGRES_USER}
+      DB_PASSWORD: ${AUTH_POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TOKEN_EXPIRATION: ${JWT_ACCESS_TOKEN_EXPIRATION:-900000}
+      JWT_REFRESH_TOKEN_EXPIRATION: ${JWT_REFRESH_TOKEN_EXPIRATION:-604800000}
+
+  order-service:
+    image: ${ORDER_SERVICE_IMAGE}
+    depends_on:
+      order-postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_DRIVER_CLASS_NAME: org.postgresql.Driver
+      DB_URL: jdbc:postgresql://order-postgres:5432/${ORDER_POSTGRES_DB}
+      DB_USER: ${ORDER_POSTGRES_USER}
+      DB_PASSWORD: ${ORDER_POSTGRES_PASSWORD}
+      USER_SERVICE_BASE_URL: http://user-service:8080
+      USER_SERVICE_AUTH_USER_ID: 0
+      USER_SERVICE_AUTH_ROLE: ADMIN
+
+  user-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${USER_POSTGRES_DB}
+      POSTGRES_USER: ${USER_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${USER_POSTGRES_PASSWORD}
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  auth-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${AUTH_POSTGRES_DB}
+      POSTGRES_USER: ${AUTH_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD}
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  order-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${ORDER_POSTGRES_DB}
+      POSTGRES_USER: ${ORDER_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${ORDER_POSTGRES_PASSWORD}
+    volumes:
+      - order_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    command: ["sh", "-c", "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  user_postgres_data:
+  auth_postgres_data:
+  order_postgres_data:
+  redis_data:
