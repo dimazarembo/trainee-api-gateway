@@ -16,6 +16,7 @@ spec:
       containers:
         - name: auth-service
           image: dzarembo/trainee-auth-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
@@ -44,3 +45,20 @@ spec:
                 secretKeyRef:
                   name: trainee-secrets
                   key: JWT_SECRET
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 10
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 5
