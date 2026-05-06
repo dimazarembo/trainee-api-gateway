@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: trainee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: dzarembo/trainee-order-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: SPRING_PROFILES_ACTIVE
+
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: ORDER_DB_URL
+
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: trainee-secrets
+                  key: ORDER_DB_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trainee-secrets
+                  key: ORDER_DB_PASSWORD
+
+            - name: USER_SERVICE_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: USER_SERVICE_BASE_URL
+
+            - name: USER_SERVICE_AUTH_USER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: USER_SERVICE_AUTH_USER_ID
+
+            - name: USER_SERVICE_AUTH_ROLE
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: USER_SERVICE_AUTH_ROLE
+
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: KAFKA_BOOTSTRAP_SERVERS

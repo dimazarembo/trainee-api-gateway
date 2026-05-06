@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: trainee
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: dzarembo/trainee-payment-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: SPRING_PROFILES_ACTIVE
+
+            - name: SERVER_PORT
+              value: "8080"
+
+            - name: SPRING_MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: trainee-secrets
+                  key: PAYMENT_MONGO_URI
+
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: trainee-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
