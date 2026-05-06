@@ -16,6 +16,7 @@ spec:
       containers:
         - name: api-gateway
           image: dzarembo/trainee-api-gateway:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
@@ -29,3 +30,20 @@ spec:
                 configMapKeyRef:
                   name: trainee-config
                   key: API_GATEWAY_SERVER_PORT
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 10
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 5
