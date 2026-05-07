@@ -16,6 +16,7 @@ spec:
       containers:
         - name: payment-service
           image: dzarembo/trainee-payment-service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
@@ -39,3 +40,20 @@ spec:
                 configMapKeyRef:
                   name: trainee-config
                   key: KAFKA_BOOTSTRAP_SERVERS
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 5
