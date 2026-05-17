@@ -40,6 +40,14 @@ spec:
                 configMapKeyRef:
                   name: trainee-config
                   key: KAFKA_BOOTSTRAP_SERVERS
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 30
+
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

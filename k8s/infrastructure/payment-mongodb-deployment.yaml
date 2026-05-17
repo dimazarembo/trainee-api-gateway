@@ -16,6 +16,7 @@ spec:
       containers:
         - name: payment-mongodb
           image: mongo:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 27017
           env:
@@ -34,6 +35,13 @@ spec:
                 configMapKeyRef:
                   name: trainee-config
                   key: PAYMENT_MONGO_DATABASE
+          startupProbe:
+            tcpSocket:
+              port: 27017
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 30
+
           readinessProbe:
             exec:
               command:
@@ -41,17 +49,13 @@ spec:
                 - -c
                 - mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping').ok" | grep 1
             initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 10
             failureThreshold: 12
 
           livenessProbe:
-            exec:
-              command:
-                - sh
-                - -c
-                - mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval "db.adminCommand('ping').ok" | grep 1
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 5
+            tcpSocket:
+              port: 27017
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 6
